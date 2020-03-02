@@ -113,6 +113,18 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                       builder: _futureBuilder,
                     ),
                   ))),
+              GestureDetector(
+                onTap: (){
+                  onHideFilter();
+                },
+//                child: SizedBox.expand(
+                    child: AnimatedContainer(
+                      duration: Duration(microseconds: 500),
+                      width: onFilter?width:0,
+                  height: onFilter?height:0,
+                  color:onFilter?Color.fromRGBO(112, 112, 112, 0.3):Colors.transparent
+                ),
+              ),
               SlideTransition(
                 position: _fliteroffsetAnimation,
                 child: getFilter(),
@@ -120,14 +132,16 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
             ],
           ),
           onWillPop: () async {
-            onFilter = false;
-            _fliterController.reverse();
-            setState(() {});
+            onHideFilter();
             return false;
           },
         ));
   }
-
+  onHideFilter(){
+    onFilter = false;
+    _fliterController.reverse();
+    setState(() {});
+  }
   Future<Response> fetchData() async {
     Dio dio = new Dio();
     (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
@@ -147,7 +161,6 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
 
   Widget _futureBuilder(BuildContext buildContext, AsyncSnapshot snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
-      print(snapshot.data.runtimeType);
       return loadPatients(snapshot.data);
     } else {
       return Center(child: CircularProgressIndicator());
