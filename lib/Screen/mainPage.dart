@@ -13,13 +13,18 @@ class mainPage extends StatefulWidget {
   }
 }
 
-class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin{
+class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   double width;
   double height;
   bool onFilter = false;
   var patientJson;
+  int _filterSex = 2;
+  //unknown = 2
+  //female = 0
+  //male = 1
   AnimationController _fliterController;
   Animation<Offset> _fliteroffsetAnimation;
+  ScrollController _filterScrollController;
   final colors = <Color>[
     Colors.greenAccent,
     Colors.pink,
@@ -53,67 +58,74 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin{
     width = MediaQuery.of(context).size.width;
     height = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
         backgroundColor: Colors.white,
-        leading: Icon(
-          Icons.refresh,
-          color: Colors.grey.shade600,
-        ),
-        actions: <Widget>[
-          IconButton(
-              icon: Icon(
-                Icons.filter_list,
-                color: Colors.grey.shade600,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          leading: Icon(
+            Icons.refresh,
+            color: Colors.grey.shade600,
+          ),
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(
+                  Icons.filter_list,
+                  color: Colors.grey.shade600,
+                ),
+                onPressed: () {
+                  setState(() {
+                    onFilter = !onFilter;
+                    if (onFilter) {
+                      _fliterController.forward();
+                    } else {
+                      _fliterController.reverse();
+                    }
+                  });
+                })
+          ],
+          elevation: 0.0,
+          centerTitle: true,
+          title: Text(
+            'Patients',
+            style: TextStyle(
+              color: Color.fromRGBO(
+                112,
+                112,
+                112,
+                1.0,
               ),
-              onPressed: (){
-                setState(() {
-                  onFilter = !onFilter;
-                  if(onFilter){
-                    _fliterController.forward();
-                  }else{
-                    _fliterController.reverse();
-                  }
-                });
-              })
-        ],
-        elevation: 0.0,
-        centerTitle: true,
-        title: Text(
-          'Patients',
-          style: TextStyle(
-            color: Color.fromRGBO(
-              112,
-              112,
-              112,
-              1.0,
+              fontSize: 20,
             ),
-            fontSize: 20,
           ),
         ),
-      ),
-      body: Stack(
-        children: <Widget>[
-          RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  patientJson = fetchData();
-                });
-              },
-              child: Center(
-                  child: Container(
+        body: WillPopScope(
+          child: Stack(
+            children: <Widget>[
+              RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      patientJson = fetchData();
+                    });
+                  },
+                  child: Center(
+                      child: Container(
                     child: FutureBuilder(
                       future: patientJson,
                       builder: _futureBuilder,
                     ),
                   ))),
-          SlideTransition(
-            position: _fliteroffsetAnimation,
-              child:getFilter(),
-          )
-        ],
-      )
-    );
+              SlideTransition(
+                position: _fliteroffsetAnimation,
+                child: getFilter(),
+              )
+            ],
+          ),
+          onWillPop: () async {
+            onFilter = false;
+            _fliterController.reverse();
+            setState(() {});
+            return false;
+          },
+        ));
   }
 
   Future<Response> fetchData() async {
@@ -148,8 +160,8 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin{
         itemCount: data.length,
         itemBuilder: (BuildContext ctxt, int index) {
           var widgetList = <Widget>[];
-          for(int i = 0; i < data[index]["entry"].length;i++ ){
-            widgetList.add(_buildList(ctxt,i,data[index]["entry"][i]));
+          for (int i = 0; i < data[index]["entry"].length; i++) {
+            widgetList.add(_buildList(ctxt, i, data[index]["entry"][i]));
           }
           return Column(
             children: widgetList,
@@ -187,19 +199,18 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin{
         child: Container(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              getName(data)
-            ],
+            children: <Widget>[getName(data)],
           ),
           margin: EdgeInsets.all(20),
         ),
       ),
     );
   }
-  Widget getName(data){
+
+  Widget getName(data) {
     var name = data["resource"]["name"][0];
     return Text(
-        '${name["prefix"] == null ? "" : name["prefix"][0]} ${name["family"]} ${name["given"][0]}',
+      '${name["prefix"] == null ? "" : name["prefix"][0]} ${name["family"]} ${name["given"][0]}',
       style: TextStyle(
         color: Colors.white,
         fontSize: 20,
@@ -214,26 +225,190 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin{
       ),
     );
   }
-  getFilter(){
+
+  getFilter() {
     return DraggableScrollableSheet(
       minChildSize: 0.3,
       initialChildSize: 0.6,
       maxChildSize: 1.0,
-      builder:(context,scrollController){
-        return SingleChildScrollView(
-          controller: scrollController,
-          child: Container(
-            decoration: new BoxDecoration(
-              borderRadius: new BorderRadius.only(topLeft: Radius.circular(20),topRight: Radius.circular(20)),
-              color: Colors.lightBlueAccent,
-            ),
-            width: width,
-            height: 1800,
-          ),
-        );
-      } ,
+      builder: (context, scrollController) {
+        _filterScrollController = scrollController;
+        scrollController.addListener(() {
+          print(scrollController.offset);
+        });
+        return NotificationListener<OverscrollIndicatorNotification>(
+            onNotification: (OverscrollIndicatorNotification overscroll) {
+              overscroll.disallowGlow();
+              return false;
+            },
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                child: Container(
+                  decoration: new BoxDecoration(
+                    borderRadius: new BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30)),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 20.0,
+                        // has the effect of softening the shadow
+                        spreadRadius: 5.0,
+                        // has the effect of extending the shadow
+                        offset: Offset(
+                          0.0, // horizontal, move right 10
+                          12.0, // vertical, move down 10
+                        ),
+                      )
+                    ],
+                  ),
+                  width: width,
+                  height: 1800,
+                  child: Container(
+                    margin: EdgeInsets.all(30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TextField(
+                          decoration: InputDecoration(
+                              disabledBorder: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              border: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              labelText: "Name"),
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 30,
+                        ),
+                        TextField(
+                          decoration: InputDecoration(
+                              disabledBorder: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              border: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              labelText: "Address"),
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 30,
+                        ),
+                        TextField(
+                          decoration: InputDecoration(
+                              disabledBorder: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              border: OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.all(Radius.circular(5.0)),
+                                  borderSide: BorderSide(color: Colors.black)),
+                              labelText: "Phone Number"),
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 30,
+                        ),
+                        Text(
+                          'Gender',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 25,
+                            color: Colors.grey.shade800
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  'Unknown',
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                Checkbox(
+                                  value: _filterSex == 2,
+                                  activeColor: Colors.blue,
+                                  onChanged:(value){
+                                    setState(() {
+                                      _filterSex=2;
+                                    });
+                                  } ,
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  'Female',
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                Checkbox(
+                                  value: _filterSex == 0,
+                                  activeColor: Colors.blue,
+                                  onChanged:(value){
+                                    setState(() {
+                                      _filterSex=0;
+                                    });
+                                  } ,
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  'Male',
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                Checkbox(
+                                  value: _filterSex == 1,
+                                  activeColor: Colors.blue,
+                                  onChanged:(value){
+                                    setState(() {
+                                      _filterSex=1;
+                                    });
+                                  } ,
+                                )
+                              ],
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  )
+                ),
+                padding: EdgeInsets.only(top: 30),
+              ),
+            ));
+      },
     );
   }
+
   @override
   void dispose() {
     super.dispose();
