@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutterfhirapplication/Model/Config.dart';
 import 'package:flutter_picker/flutter_picker.dart';
+import 'package:flutterfhirapplication/Model/Patient.dart';
+import 'package:enum_to_string/enum_to_string.dart';
 class mainPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -18,6 +20,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   double height;
   bool onFilter = false;
   var patientJson;
+  List<Patient> displayPatients;
   int _filterSex = 2;
   //unknown = 2
   //female = 0
@@ -25,6 +28,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   AnimationController _fliterController;
   Animation<Offset> _fliteroffsetAnimation;
   ScrollController _filterScrollController;
+  List<Patient> originPatients = [];
   final colors = <Color>[
     Colors.greenAccent,
     Colors.pink,
@@ -169,25 +173,20 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
 
   loadPatients(Response response) {
     var data = response.data;
+    for (int i = 0; i < data.length; i++) {
+      for(int entry = 0 ; entry < data[i]['entry'][entry].length;entry++){
+        originPatients.add(Patient.getPatient(data[i]['entry'][entry]['resource']));
+      }
+    }
+    displayPatients = originPatients.where((element) => true).toList();
     return ListView.builder(
-        itemCount: data.length,
+        itemCount: displayPatients.length,
         itemBuilder: (BuildContext ctxt, int index) {
-          var widgetList = <Widget>[];
-          for (int i = 0; i < data[index]["entry"].length; i++) {
-            widgetList.add(_buildList(ctxt, i, data[index]["entry"][i]));
-          }
-          return Column(
-            children: widgetList,
-          );
-//          return ListView.builder(
-//            itemCount: data[index]["entry"].length,
-//              itemBuilder: (BuildContext ctxtx, int indexi){
-//                return _buildList(ctxt, index, data);
-//          });
+          return _buildPatient(displayPatients[index],index);
         });
   }
 
-  _buildList(BuildContext ctxt, int index, data) {
+  _buildPatient(Patient patient,index) {
     return Padding(
       padding: EdgeInsets.only(top: 40),
       child: Container(
@@ -212,7 +211,29 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
         child: Container(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[getName(data)],
+            children: <Widget>[
+              getName(patient),
+              getBirthDateAndGender(patient),
+            Text(
+              'Address:',
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+        fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    blurRadius: 2.0,
+                    color: Colors.grey,
+                    offset: Offset(1.0, 1.0),
+                  ),
+                ],
+              ),
+            ),
+              getAddress(patient),
+              getLanguage(patient)
+            ],
           ),
           margin: EdgeInsets.all(20),
         ),
@@ -220,10 +241,9 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget getName(data) {
-    var name = data["resource"]["name"][0];
+  Widget getName(Patient patient) {
     return Text(
-      '${name["prefix"] == null ? "" : name["prefix"][0]} ${name["family"]} ${name["given"][0]}',
+      '${patient.names[0].prefix.length == 0? "" : patient.names[0].prefix[0]} ${patient.names[0].family} ${patient.names[0].given.length == 0? "" : patient.names[0].given[0]}',
       style: TextStyle(
         color: Colors.white,
         fontSize: 20,
@@ -238,7 +258,78 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
       ),
     );
   }
-
+  String enumToString(value){
+    return EnumToString.parse(value);
+  }
+  Widget getBirthDateAndGender(Patient patient){
+    return Text(
+      'Age:${calculateAge(patient.birthDate)}  Gender: ${enumToString(patient.gender)}',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(
+            blurRadius: 5.0,
+            color: Colors.grey,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget getAddress(Patient patient){
+    return Text(
+      '${patient.addresses[0]}',
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+//        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(
+            blurRadius: 2.0,
+            color: Colors.grey,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
+  calculateAge(DateTime birthDate) {
+    DateTime currentDate = DateTime.now();
+    int age = currentDate.year - birthDate.year;
+    int month1 = currentDate.month;
+    int month2 = birthDate.month;
+    if (month2 > month1) {
+      age--;
+    } else if (month1 == month2) {
+      int day1 = currentDate.day;
+      int day2 = birthDate.day;
+      if (day2 > day1) {
+        age--;
+      }
+    }
+    return age;
+  }
+  Widget getLanguage(Patient patient){
+    return Text(
+      'Language: ${patient.communications.join("")}',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(
+            blurRadius: 5.0,
+            color: Colors.grey,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
   getFilter() {
     return DraggableScrollableSheet(
       minChildSize: 0.3,
