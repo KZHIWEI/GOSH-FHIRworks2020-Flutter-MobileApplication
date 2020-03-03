@@ -4,7 +4,7 @@ import 'package:dio/adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutterfhirapplication/Model/Config.dart';
-
+import 'package:flutter_picker/flutter_picker.dart';
 class mainPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -60,7 +60,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: onFilter?Color.fromRGBO(112, 112, 112, 0.3):Colors.white,
           leading: Icon(
             Icons.refresh,
             color: Colors.grey.shade600,
