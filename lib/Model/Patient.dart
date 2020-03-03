@@ -176,7 +176,7 @@ class Address {
     this.lines.forEach((element) {
       line += "$element ";
     });
-    return '$line,${this.city},${this.state},${this.country}';
+    return '$line,${this.city},${this.state},${this.country} ${this.postalCode??""}';
   }
 }
 enum ContactSystem{

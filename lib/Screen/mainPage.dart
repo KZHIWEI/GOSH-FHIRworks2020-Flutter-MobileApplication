@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:dio/adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutterfhirapplication/Model/ColorGradient.dart';
 import 'package:flutterfhirapplication/Model/Config.dart';
 import 'package:flutter_picker/flutter_picker.dart';
 import 'package:flutterfhirapplication/Model/Patient.dart';
 import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flutter_range_slider/flutter_range_slider.dart' as rs;
 class mainPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -21,14 +23,20 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   bool onFilter = false;
   var patientJson;
   List<Patient> displayPatients;
-  int _filterSex = 2;
+  Gender _gender = Gender.unknown;
   //unknown = 2
   //female = 0
   //male = 1
+  double _maxRange = 100;
+  bool onFetch = true;
+  double _minRange = 0;
   AnimationController _fliterController;
   Animation<Offset> _fliteroffsetAnimation;
   ScrollController _filterScrollController;
   List<Patient> originPatients = [];
+  TextEditingController _nameController;
+  TextEditingController _addressController;
+  TextEditingController _phoneController;
   final colors = <Color>[
     Colors.greenAccent,
     Colors.pink,
@@ -43,6 +51,9 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _nameController = TextEditingController();
+    _addressController = TextEditingController();
+    _phoneController = TextEditingController();
     patientJson = fetchData();
     _fliterController = AnimationController(
       duration: const Duration(milliseconds: 400),
@@ -102,7 +113,8 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
           ),
         ),
         body: WillPopScope(
-          child: Stack(
+          child:Material(
+            child:Stack(
             children: <Widget>[
               RefreshIndicator(
                   onRefresh: () async {
@@ -119,6 +131,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                   ))),
               GestureDetector(
                 onTap: (){
+                  onSearch();
                   onHideFilter();
                 },
 //                child: SizedBox.expand(
@@ -135,11 +148,24 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
               )
             ],
           ),
+        ),
           onWillPop: () async {
+            onRestore();
             onHideFilter();
             return false;
           },
-        ));
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: onFilter?FloatingActionButton(
+          onPressed: (){
+            onSearch();
+            onHideFilter();
+          },
+        child: Icon(
+          Icons.done
+        ),
+    ):SizedBox.shrink(),
+    );
   }
   onHideFilter(){
     onFilter = false;
@@ -178,11 +204,10 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
         originPatients.add(Patient.getPatient(data[i]['entry'][entry]['resource']));
       }
     }
-    displayPatients = originPatients.where((element) => true).toList();
     return ListView.builder(
-        itemCount: displayPatients.length,
+        itemCount: (displayPatients??originPatients).length,
         itemBuilder: (BuildContext ctxt, int index) {
-          return _buildPatient(displayPatients[index],index);
+          return _buildPatient((displayPatients??originPatients)[index],index);
         });
   }
 
@@ -191,8 +216,9 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
       padding: EdgeInsets.only(top: 40),
       child: Container(
         decoration: new BoxDecoration(
-          color: colors[index % colors.length],
+//          color: colors[index % colors.length],
           borderRadius: new BorderRadius.all(Radius.circular(20)),
+          gradient: ColorMap.getContainerGradient(index),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.shade400,
@@ -375,7 +401,24 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
+                        Center(
+                          child:InkWell(
+                            child: Icon(
+                              Icons.settings_backup_restore,
+                              size: 30,
+                            ),
+                            splashColor: Colors.lightBlue,
+                            onTap: (){
+                              onRestore();
+                            },
+                          )
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 20,
+                        ),
                         TextField(
+                          controller: _nameController,
                           decoration: InputDecoration(
                               disabledBorder: OutlineInputBorder(
                                   borderRadius:
@@ -392,6 +435,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                           height: 30,
                         ),
                         TextField(
+                          controller: _addressController,
                           decoration: InputDecoration(
                               disabledBorder: OutlineInputBorder(
                                   borderRadius:
@@ -408,6 +452,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                           height: 30,
                         ),
                         TextField(
+                          controller: _phoneController,
                           decoration: InputDecoration(
                               disabledBorder: OutlineInputBorder(
                                   borderRadius:
@@ -428,80 +473,97 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 25,
-                            color: Colors.grey.shade800
+                            color: Color.fromARGB(255, 112, 112, 112)
                           ),
                         ),
+                        Container(
+                          width: width*0.4,
+                          child:DropdownButton(
+                            focusColor: Colors.lightBlue,
+                            isExpanded: true,
+                            hint: new Text("Gender"),
+                            value: _gender,
+                            onChanged: (Gender gender) {
+                              setState(() {
+                                _gender = gender;
+                              });
+                            },
+                            items:[
+                              DropdownMenuItem(
+                                value: Gender.unknown,
+                                child: new Text(
+                                  "Unknown",
+                                  style: new TextStyle(color: Color.fromARGB(255, 80, 80, 80)),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: Gender.male,
+                                child: new Text(
+                                  "Male",
+                                  style: new TextStyle(color: Color.fromARGB(255, 80, 80, 80)),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: Gender.female,
+                                child: new Text(
+                                  "Female",
+                                  style: new TextStyle(color: Color.fromARGB(255, 80, 80, 80)),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: Gender.other,
+                                child: new Text(
+                                  "Other",
+                                  style: new TextStyle(color: Color.fromARGB(255, 80, 80, 80)),
+                                ),
+                              )
+                            ] ,
+                          ),
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 30,
+                        ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  'Unknown',
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: _filterSex == 2,
-                                  activeColor: Colors.blue,
-                                  onChanged:(value){
-                                    setState(() {
-                                      _filterSex=2;
-                                    });
-                                  } ,
-                                ),
-                              ],
+                            Text(
+                              'Age',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 25,
+                                  color: Color.fromARGB(255, 112, 112, 112)
+//                                  color: Colors.grey.shade800
+                              ),
                             ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  'Female',
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: _filterSex == 0,
-                                  activeColor: Colors.blue,
-                                  onChanged:(value){
-                                    setState(() {
-                                      _filterSex=0;
-                                    });
-                                  } ,
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  'Male',
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: _filterSex == 1,
-                                  activeColor: Colors.blue,
-                                  onChanged:(value){
-                                    setState(() {
-                                      _filterSex=1;
-                                    });
-                                  } ,
-                                )
-                              ],
+                            Text(
+                              '${_minRange.floor()} - ${_maxRange.floor()}',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color.fromARGB(255, 112, 112, 112)
+                              ),
                             )
                           ],
-                        )
+                        ),
+                        Divider(
+                          color: Colors.transparent,
+                          height: 15,
+                        ),
+                        rs.RangeSlider(
+                          min: 0,
+                          max: 100,
+                          lowerValue: _minRange,
+                          upperValue: _maxRange,
+//                          divisions: 100,
+//                          showValueIndicator: true,
+//                          valueIndicatorMaxDecimals: 0,
+                          onChanged: (double newLowerValue, double newUpperValue) {
+                            setState(() {
+                              _minRange = newLowerValue;
+                              _maxRange = newUpperValue;
+                            });
+                          },
+                        ),
                       ],
                     ),
                   )
@@ -512,7 +574,77 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
       },
     );
   }
+  onSearch(){
+//    onFilter = false;
+    FocusScope.of(context).unfocus();
+    displayPatients = originPatients.where((element) {
+//      return false;
+      bool result = false;
+      if(_nameController.text != ""){
+        String nameText = _nameController.text.toLowerCase();
+        for(HumanName name in element.names){
+          result = result || name.given.any((element){
+            return element.toLowerCase().contains(nameText);
+          });
+          result = result || name.prefix.any((element){
+            return element.toLowerCase().contains(nameText);
+          });
+          result = result || name.suffix.any((element){
+            return element.toLowerCase().contains(nameText);
+          });
+          result = result || name.family.toLowerCase().contains(nameText);
+        }
+      }
+      if(_addressController.text != ""){
+        String addressText = _addressController.text.toLowerCase();
+        result = result || element.addresses.any((element){
+          bool addressResult = false;
+          addressResult = addressResult || element.lines.any((element){
+            return element.toLowerCase().contains(addressText);
+          });
+          addressResult = addressResult || ((element.postalCode?.toLowerCase()?.contains(addressText))??false);
+          addressResult = addressResult || ((element.city?.toLowerCase()?.contains(addressText))??false);
+          addressResult = addressResult || ((element.state?.toLowerCase()?.contains(addressText))??false);
+          addressResult = addressResult || ((element.country?.toLowerCase()?.contains(addressText))??false);
+          return addressResult;
+        });
+      }
+      if(_phoneController.text != ""){
+        String numberText = _phoneController.text.replaceAll(RegExp(r"[^0-9]"), '');
+        result = result || element.telecom.any((element){
+//          print(numberText);
+//          print(element.value.replaceAll(RegExp(r"[^0-9]"), ''));
+          return element.value.replaceAll(RegExp(r"[^0-9]"), '').contains(numberText);
+        });
+      }
+      if(_nameController.text == "" && _addressController.text == "" && _phoneController.text == ""){
+        result = true;
+      }
+      if(_gender != Gender.unknown){
+        result = result && _gender == element.gender;
+      }
+      result = result && (_minRange <= calculateAge(element.birthDate) &&  calculateAge(element.birthDate) <= _maxRange);
+      return result;
+    }).toList();
+    onHideFilter();
+    setState(() {
 
+    });
+  }
+  onRestore(){
+    _nameController.text = "";
+    _minRange = 0;
+    _maxRange = 100;
+    _addressController.text = "";
+    _phoneController.text = "";
+    _gender = Gender.unknown;
+    FocusScope.of(context).unfocus();
+    displayPatients = originPatients;
+//    onHideFilter();
+    setState(() {
+
+    });
+  }
   @override
   void dispose() {
     super.dispose();
