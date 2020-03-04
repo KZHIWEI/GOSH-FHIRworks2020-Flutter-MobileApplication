@@ -173,9 +173,7 @@ class Address {
   @override
   String toString() {
     String line = "";
-    this.lines.forEach((element) {
-      line += "$element ";
-    });
+    line = this.lines.join(" ");
     return '$line,${this.city},${this.state},${this.country} ${this.postalCode??""}';
   }
 }

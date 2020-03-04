@@ -28,6 +28,7 @@ dependencies:
   enum_to_string: ^1.0.9
   flutter_range_slider: ^1.4.0
   flutter_statusbarcolor: ^0.2.3
+  intl: ^0.16.1
 
 dev_dependencies:
   flutter_test:

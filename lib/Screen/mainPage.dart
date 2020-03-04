@@ -220,12 +220,13 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
         originPatients.add(Patient.getPatient(data[i]['entry'][entry]['resource']));
       }
     }
-    return ListView.builder(
+    return Scrollbar(
+        child:ListView.builder(
       controller: scrollController,
         itemCount: (displayPatients??originPatients).length,
         itemBuilder: (BuildContext ctxt, int index) {
           return _buildPatient((displayPatients??originPatients)[index],index);
-        });
+        }));
   }
 
   _buildPatient(Patient patient,index) {
