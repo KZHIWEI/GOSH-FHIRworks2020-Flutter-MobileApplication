@@ -81,9 +81,20 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: onFilter?Color.fromRGBO(112, 112, 112, 0.3):Colors.white,
-          leading: Icon(
-            Icons.refresh,
+          leading: IconButton(
+            icon:Icon(
+                Icons.refresh
+            ),
             color: Colors.grey.shade600,
+            onPressed: () async {
+              if(onFetch) return;
+              onRestore();
+              displayPatients = null;
+              onFetch = true;
+              setState(() {
+                patientJson = fetchData();
+              });
+            },
           ),
           actions: <Widget>[
             IconButton(

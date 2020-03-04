@@ -42,7 +42,6 @@ class _PatientDetail extends State<PatientDetail> {
     FlutterStatusbarcolor.setStatusBarColor(color.start.withOpacity(0.8));
     observationData = fetchData();
     scrollController = ScrollController();
-
   }
 
   @override

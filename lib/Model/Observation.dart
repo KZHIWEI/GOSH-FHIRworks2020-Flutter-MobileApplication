@@ -11,6 +11,9 @@ class Observation {
   static List<Observation> getObservations(data){
     List<Observation> observations = [];
     for(var entry in data){
+      if( entry['entry'] == null){
+        break;
+      }
       for (var resource in entry['entry']){
         observations.add(getObservation(resource['resource']));
       }
