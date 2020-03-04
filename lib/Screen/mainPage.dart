@@ -9,6 +9,8 @@ import 'package:flutter_picker/flutter_picker.dart';
 import 'package:flutterfhirapplication/Model/Patient.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_range_slider/flutter_range_slider.dart' as rs;
+import 'package:flutterfhirapplication/Screen/PatientDetail.dart';
+import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
 class mainPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -31,6 +33,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   bool onFetch = true;
   double _minRange = 0;
   AnimationController _fliterController;
+  ScrollController scrollController;
   Animation<Offset> _fliteroffsetAnimation;
   ScrollController _filterScrollController;
   List<Patient> originPatients = [];
@@ -51,6 +54,8 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   void initState() {
     // TODO: implement initState
     super.initState();
+    FlutterStatusbarcolor.setStatusBarColor(Colors.grey.shade200);
+    scrollController = ScrollController();
     _nameController = TextEditingController();
     _addressController = TextEditingController();
     _phoneController = TextEditingController();
@@ -88,6 +93,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
                 ),
                 onPressed: () {
                   setState(() {
+                    if(onFetch) return;
                     onFilter = !onFilter;
                     if (onFilter) {
                       _fliterController.forward();
@@ -99,7 +105,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
           ],
           elevation: 0.0,
           centerTitle: true,
-          title: Text(
+          title: GestureDetector(child:Text(
             'Patients',
             style: TextStyle(
               color: Color.fromRGBO(
@@ -111,6 +117,11 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
               fontSize: 20,
             ),
           ),
+            onDoubleTap: (){
+             if(onFetch) return;
+             scrollController.animateTo(0.0, duration: Duration(milliseconds: 500), curve: Curves.easeIn);
+            },
+        ),
         ),
         body: WillPopScope(
           child:Material(
@@ -118,6 +129,10 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
             children: <Widget>[
               RefreshIndicator(
                   onRefresh: () async {
+                    if(onFetch) return;
+                    onRestore();
+                    displayPatients = null;
+                    onFetch = true;
                     setState(() {
                       patientJson = fetchData();
                     });
@@ -191,6 +206,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
 
   Widget _futureBuilder(BuildContext buildContext, AsyncSnapshot snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
+      onFetch = false;
       return loadPatients(snapshot.data);
     } else {
       return Center(child: CircularProgressIndicator());
@@ -205,6 +221,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
       }
     }
     return ListView.builder(
+      controller: scrollController,
         itemCount: (displayPatients??originPatients).length,
         itemBuilder: (BuildContext ctxt, int index) {
           return _buildPatient((displayPatients??originPatients)[index],index);
@@ -214,7 +231,8 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   _buildPatient(Patient patient,index) {
     return Padding(
       padding: EdgeInsets.only(top: 40),
-      child: Container(
+      child: GestureDetector(
+      child:Container(
         decoration: new BoxDecoration(
 //          color: colors[index % colors.length],
           borderRadius: new BorderRadius.all(Radius.circular(20)),
@@ -264,6 +282,11 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
           margin: EdgeInsets.all(20),
         ),
       ),
+        onTap: ()async{
+          await Navigator.of(context).push(MaterialPageRoute(builder: (context)=>PatientDetail(patient:patient ,colorGradient: ColorMap.getColorGradient(index))));
+          FlutterStatusbarcolor.setStatusBarColor(Colors.grey.shade200);
+        },
+    ),
     );
   }
 
@@ -359,13 +382,10 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   getFilter() {
     return DraggableScrollableSheet(
       minChildSize: 0.3,
-      initialChildSize: 0.6,
+      initialChildSize: 0.8,
       maxChildSize: 1.0,
       builder: (context, scrollController) {
         _filterScrollController = scrollController;
-        scrollController.addListener(() {
-          print(scrollController.offset);
-        });
         return NotificationListener<OverscrollIndicatorNotification>(
             onNotification: (OverscrollIndicatorNotification overscroll) {
               overscroll.disallowGlow();
