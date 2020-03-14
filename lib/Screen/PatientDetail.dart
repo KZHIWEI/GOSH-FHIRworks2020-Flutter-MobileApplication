@@ -11,37 +11,40 @@ import 'package:flutterfhirapplication/Model/Patient.dart';
 import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-String enumToString(value){
+import 'package:flutter_icons/flutter_icons.dart';
+
+String enumToString(value) {
   return EnumToString.parse(value);
 }
+
 class PatientDetail extends StatefulWidget {
-  final ColorGradient colorGradient;
   final Patient patient;
 
-  PatientDetail({@required this.patient, @required this.colorGradient});
+  PatientDetail({@required this.patient});
 
   @override
   State createState() {
-    return _PatientDetail(patient: this.patient, color: this.colorGradient);
+    return _PatientDetail(patient: this.patient);
   }
 }
 
 class _PatientDetail extends State<PatientDetail> {
-  _PatientDetail({@required this.patient, @required this.color});
+  _PatientDetail({@required this.patient});
+
   ScrollController scrollController;
-  ColorGradient color;
   Patient patient;
   double width;
   double height;
   var observationData;
   List<Observation> observations;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    FlutterStatusbarcolor.setStatusBarColor(color.start.withOpacity(0.8));
     observationData = fetchData();
     scrollController = ScrollController();
+    FlutterStatusbarcolor.setStatusBarColor(darken(Color.fromARGB(255, 83, 90, 118),40));
   }
 
   @override
@@ -49,43 +52,18 @@ class _PatientDetail extends State<PatientDetail> {
     width = MediaQuery.of(context).size.width;
     height = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: color.start,
-//      drawerScrimColor: Colors.transparent,
-//      endDrawer: SafeArea(
-//        child: SizedBox(
-//            width: width * 0.5,
-//            child: Drawer(
-//              child: ListView(
-//                children: <Widget>[
-//                  new DrawerHeader(
-//                    child: new Text('Header'),
-//                  ),
-//                  new ListTile(
-//                    title: new Text('First Menu Item'),
-//                    onTap: () {},
-//                  ),
-//                  new ListTile(
-//                    title: new Text('Second Menu Item'),
-//                    onTap: () {},
-//                  ),
-//                  new Divider(),
-//                  new ListTile(
-//                    title: new Text('About'),
-//                    onTap: () {},
-//                  ),
-//                ],
-//              ),
-//            )),
-//      ),
+      backgroundColor: Color.fromARGB(255, 83, 90, 118),
       body: CustomScrollView(
         controller: scrollController,
         slivers: <Widget>[
           SliverAppBar(
-            backgroundColor: color.start,
+            backgroundColor: darken(Color.fromARGB(255, 83, 90, 118),20),
             title: GestureDetector(
-                child:Text(getName()),
-              onDoubleTap: (){
-                  scrollController.animateTo(0.0, duration: Duration(milliseconds: 500), curve: Curves.easeIn);
+              child: Text(getName()),
+              onDoubleTap: () {
+                scrollController.animateTo(0.0,
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeIn);
               },
             ),
             pinned: true,
@@ -103,79 +81,64 @@ class _PatientDetail extends State<PatientDetail> {
 
   Widget getDelegateList(Response response) {
     return SliverList(
-        delegate: SliverChildListDelegate([
-          getPatientDetail(),
-          getObservationList(response)
-        ]));
+        delegate: SliverChildListDelegate(
+            [getPatientDetail(), getObservationList(response)]));
   }
-  Widget getObservationList(Response response){
+
+  Widget getObservationList(Response response) {
     List<Widget> listview = [];
-    for (Observation observation in observations){
+    for (Observation observation in observations) {
       List<Widget> componetWidget = [];
-      for(Component component in observation.components){
-        componetWidget.addAll(
-            [
-              Text('${component.text}',
-                style: TextStyle(
-                    fontSize: 20,
-                    color: color.end
-                ),),
-              Text('${component.value} ${component.unit}',
-                style: TextStyle(
-                  fontSize: 20,
-                    color: color.end
-                ),)
-            ]
-        );
+      int i = 0;
+      for (Component component in observation.components) {
+        componetWidget.addAll([
+          Divider(
+            thickness: 2,
+            color: Colors.grey,
+          ),
+          ListTile(
+            leading: Icon(MaterialIcons.subtitles),
+            title: Text('${component.text}'),
+          ),
+          ListTile(
+            leading: Icon(MaterialIcons.details),
+            title: Text('${component.value} ${component.unit}'),
+          ),
+        ]);
+        i++;
       }
       listview.add(
-        Container(
-          width: width,
-//      height: 600,
-          margin: EdgeInsets.only(left: 20, right: 20,top: 30),
-          decoration: new BoxDecoration(
-            color: darken(color.start, 16),
-//          color: colors[index % colors.length],
-            borderRadius: new BorderRadius.all(Radius.circular(20)),
-//        gradient: ColorMap.getContainerGradient(index),
-          ),
-          child: Container(
-            margin: EdgeInsets.all(30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                observation.issued != null && observation.issued != ""?
-                Text(
-                    'Issued ${observation.issued}',
-                  style: TextStyle(
-                      color: color.end
+        Card(
+            margin: EdgeInsets.only(left: 20, right: 20, top: 30),
+            child: Container(
+              margin: EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  observation.issued != null && observation.issued != ""
+                      ? ListTile(
+                          leading: Icon(AntDesign.calendar),
+                          title: Text('${observation.issued}'),
+                        )
+                      : SizedBox.shrink(),
+                  ListTile(
+                    leading: Icon(MaterialCommunityIcons.format_list_bulleted_type),
+                    title: Text('${observation.observationCategory}'),
                   ),
-                ):SizedBox.shrink(),
-                Text(
-                  'Category: ${observation.observationCategory}',
-                  style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
+                  ListTile(
+                    leading: Icon(MaterialIcons.data_usage),
+                    title: Text('${observation.state}'),
                   ),
-                ),
-                Text(
-                  'State: ${observation.state}',
-                  style: TextStyle(
-                      color: color.end,
-                    fontSize: 25,
-                  ),
-                )
-              ]..addAll(componetWidget),
-
-            ),
-          )
-        ),
+                ]..addAll(componetWidget),
+              ),
+            )),
       );
     }
     return Column(
       children: listview,
     );
   }
+
   Widget getCircularProgressIndicator() {
     return SliverFillRemaining(
       hasScrollBody: false,
@@ -193,189 +156,61 @@ class _PatientDetail extends State<PatientDetail> {
     }
   }
 
+  IconData getGenderIcon(gender) {
+    switch (gender) {
+      case Gender.male:
+        return FontAwesome.male;
+      case Gender.female:
+        return FontAwesome.female;
+      case Gender.unknown:
+        return AntDesign.questioncircle;
+      case Gender.other:
+        return AntDesign.questioncircle;
+    }
+  }
+
   Widget getPatientDetail() {
-    return Container(
-        width: width * 0.8,
-//      height: 600,
-        margin: EdgeInsets.only(left: 20, right: 20),
-        decoration: new BoxDecoration(
-          color: darken(color.start, 12),
-//          color: colors[index % colors.length],
-          borderRadius: new BorderRadius.all(Radius.circular(20)),
-//        gradient: ColorMap.getContainerGradient(index),
-        ),
+    return Card(
+        margin: EdgeInsets.only(left: 20, right: 20, top: 30),
         child: Container(
           margin: EdgeInsets.all(30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                getName(),
-                style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold),
+              ListTile(
+                leading: Icon(getGenderIcon(patient.gender)),
+                title: Text(getName()),
               ),
-              Divider(
-                height: 10,
-                color: Colors.transparent,
+              ListTile(
+                leading: Icon(Icons.date_range),
+                title: Text(
+                    '${DateFormat('yyyy-MM-dd').format(patient.birthDate)}           ${calculateAge(patient.birthDate)}'),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Gender: ',
-                        style: TextStyle(
-                            color: color.end,
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        enumToString(patient.gender),
-                        textAlign: TextAlign.start,
-                        style: TextStyle(
-                          color: color.end,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Age: ',
-                        style: TextStyle(
-                            color: color.end,
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${calculateAge(patient.birthDate)}',
-                        textAlign: TextAlign.start,
-                        style: TextStyle(
-                          color: color.end,
-                          fontSize: 20,
-                        ),
-                      )
-                    ],
-                  )
-                ],
+              ListTile(
+                leading: Icon(FontAwesome.address_book),
+                title: Text('${getAddress()}'),
               ),
-              Text(
-                'Address:',
-                style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold),
+              patient.maritalStatus != null && patient.maritalStatus != ""
+                  ? ListTile(
+                      leading: Icon(MaterialCommunityIcons.human_male_female),
+                      title: Text('${patient.maritalStatus}'),
+                    )
+                  : SizedBox.shrink(),
+              patient.telecom.length != 0
+                  ? ListTile(
+                      leading: Icon(Foundation.telephone),
+                      title: Text('${patient.telecom[0].value}'),
+                    )
+                  : SizedBox.shrink(),
+              ListTile(
+                leading: Icon(Icons.language),
+                title: Text('${patient.communications.join(" ")}'),
               ),
-              Padding(
-               padding: EdgeInsets.only(left: 10),
-               child: Text(
-                 '${getAddress()}',
-                 textAlign: TextAlign.start,
-                 style: TextStyle(
-                   color: color.end,
-                   fontSize: 20,
-                 ),
-               ),
-              ),
-              Text(
-                'Birthdate:',
-                style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 10),
-                child:Text(
-                  '${DateFormat('yyyy-MM-dd').format(patient.birthDate)}',
-                  textAlign: TextAlign.start,
-                  style: TextStyle(
-                    color: color.end,
-                    fontSize: 20,
-                  ),
-                ) ,
-              ),
-              patient.maritalStatus != null  && patient.maritalStatus != "" ? Text(
-                'Marital Status:',
-                style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold),
-              ):SizedBox.shrink(),
-              patient.maritalStatus != null  && patient.maritalStatus != ""  ?
-                  Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: Text(
-                      '${patient.maritalStatus}',
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                        color: color.end,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ) :SizedBox.shrink(),
-              patient.telecom.length != 0?Text(
-                'TeleCom:',
-                style: TextStyle(
-                    color: color.end,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold),
-              ):SizedBox.shrink(),
-              patient.telecom.length != 0?
-                  Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: getTelecomList(),
-                    ),
-                  ) :SizedBox.shrink(),
-              Text(
-                'Language: ${patient.communications.join(" ")}',
-                style: TextStyle(
-                  color: color.end,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold
-                ),
-              )
             ],
           ),
         ));
   }
-  List<Widget> getTelecomList(){
-    List<Widget> result = <Widget>[];
-    for(ContactPoint contactPoint in patient.telecom){
-      result.addAll([
-        Text(
-          'System: ${enumToString(contactPoint.system)}',
-          style: TextStyle(
-            color: color.end,
-              fontSize: 15
-          ),
-        ),
-        Text(
-            'use: ${enumToString(contactPoint.use)}',
-          style: TextStyle(
-              color: color.end,
-              fontSize: 15
-          ),
-        ),
-        Text(
-            'Number: ${contactPoint.value}',
-          style: TextStyle(
-              color: color.end,
-            fontSize: 15
-          ),
-        ),
-      ]);
-    }
-    return result;
-  }
+
   calculateAge(DateTime birthDate) {
     DateTime currentDate = DateTime.now();
     int age = currentDate.year - birthDate.year;

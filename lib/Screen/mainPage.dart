@@ -11,6 +11,8 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_range_slider/flutter_range_slider.dart' as rs;
 import 'package:flutterfhirapplication/Screen/PatientDetail.dart';
 import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
+import 'package:flutter_icons/flutter_icons.dart';
+import 'package:flutterfhirapplication/Screen/PatientStatistics.dart';
 class mainPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -26,9 +28,6 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
   var patientJson;
   List<Patient> displayPatients;
   Gender _gender = Gender.unknown;
-  //unknown = 2
-  //female = 0
-  //male = 1
   double _maxRange = 100;
   bool onFetch = true;
   double _minRange = 0;
@@ -83,17 +82,13 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
           backgroundColor: onFilter?Color.fromRGBO(112, 112, 112, 0.3):Colors.white,
           leading: IconButton(
             icon:Icon(
-                Icons.refresh
+                AntDesign.barschart
             ),
             color: Colors.grey.shade600,
             onPressed: () async {
               if(onFetch) return;
-              onRestore();
-              displayPatients = null;
-              onFetch = true;
-              setState(() {
-                patientJson = fetchData();
-              });
+              await Navigator.of(context).push(MaterialPageRoute(builder: (context)=>PatientStatistics(originPatients )));
+              FlutterStatusbarcolor.setStatusBarColor(Colors.grey.shade200);
             },
           ),
           actions: <Widget>[
@@ -295,7 +290,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
         ),
       ),
         onTap: ()async{
-          await Navigator.of(context).push(MaterialPageRoute(builder: (context)=>PatientDetail(patient:patient ,colorGradient: ColorMap.getColorGradient(index))));
+          await Navigator.of(context).push(MaterialPageRoute(builder: (context)=>PatientDetail(patient:patient )));
           FlutterStatusbarcolor.setStatusBarColor(Colors.grey.shade200);
         },
     ),
