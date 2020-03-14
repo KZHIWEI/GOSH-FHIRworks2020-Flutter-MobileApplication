@@ -181,6 +181,7 @@ class _mainPage extends State<mainPage> with SingleTickerProviderStateMixin {
           onPressed: (){
             onSearch();
             onHideFilter();
+            scrollController.animateTo(0.0, duration: Duration(milliseconds: 500), curve: Curves.easeIn);
           },
         child: Icon(
           Icons.done
