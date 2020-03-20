@@ -1,3 +1,3 @@
 class Config{
-  static final baseUrl = 'http://178.62.0.181:5000';
+  static final baseUrl = 'https://henryz.cc:5001';
 }
